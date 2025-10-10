@@ -2,8 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-}
-
 @keyframes intro-slide-up {
   to {
     transform: translateY(-72px);
