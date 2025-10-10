@@ -325,138 +325,125 @@ function ThemeToggle({ theme, setTheme }) {
    4) Header (Work overlay + Sounds overlay + mini player)
    ========================================================= */
 function Header({
-  theme,
-  setTheme,
-  page,
-  setPage,
-  soundOpen,
-  setSoundOpen,
-  trackIdx,
-  setTrackIdx,
-  isPlaying,
-  audioRef,
-  navigate,
+  current, navigate,
+  theme, setTheme,
+  soundOpen, setSoundOpen,
+  isPlaying, togglePlay,
+  tracks, playTrack, trackIdx,
 }) {
-  // mobile menu open/close
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [workOpen, setWorkOpen] = useState(false);
+  const [hoverSlug, setHoverSlug] = useState(WORKS[0]?.slug || null);
 
-  // close sounds if we change page (requested behavior)
+  const hoveredWork = WORKS.find(w => w.slug === hoverSlug) || WORKS[0];
+
+  // ESC closes Sounds overlay (audio keeps playing)
   useEffect(() => {
-    setSoundOpen(false);
-  }, [page, setSoundOpen]);
-
-  // toggle helpers
-  const toggleTheme = () =>
-    setTheme((t) => (t === "dark" ? "light" : "dark"));
-
-  const onClickSounds = () => setSoundOpen((v) => !v);
-  const onClickMenu = () => setMenuOpen((v) => !v);
-
-  // picking a work from the condensed mobile menu
-  const go = (to) => {
-    setMenuOpen(false);
-    if (to === "work" || to === "archive" || to === "info" || to === "home") {
-      setPage(to);
-      navigate(to);
-    }
-  };
-
-  const currentTrack = trackIdx != null ? SOUNDS[trackIdx] : null;
+    const onKey = e => { if (e.key === "Escape") setSoundOpen(false); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [setSoundOpen]);
 
   return (
-    <header className="site-header">
-      <div className="container row header-grid">
-        {/* Left: Brand */}
-        <button className="brand" onClick={() => go("home")} aria-label="Home">
-          {SITE.name}
-        </button>
+    <header className="site-header" onMouseLeave={() => setWorkOpen(false)}>
+      <div className="ticks" />
+      <div className="container row">
+        <nav className="nav">
+          <a onClick={() => navigate("home")}>Kellen Cosgrave</a>
 
-        {/* Center: Mobile Menu trigger */}
-        <button
-          className="menu-trigger"
-          onClick={onClickMenu}
-          aria-expanded={menuOpen ? "true" : "false"}
-          aria-controls="mobile-menu"
-        >
-          {menuOpen ? "Close" : "Menu"}
-        </button>
-
-        {/* Right: Sounds control (also shows playing/paused) */}
-        <div className="header-right">
-          <button className="sound-toggle" onClick={onClickSounds}>
-            Sounds {isPlaying ? "❚❚" : "▶"}
+          <button
+            className={current === "work" ? "active" : ""}
+            onMouseEnter={() => setWorkOpen(true)}
+            onClick={() => navigate("work/night-vision")}
+          >
+            Work
           </button>
-          <button className="theme-toggle" onClick={toggleTheme} aria-label="Theme">
-            {theme === "dark" ? "☾" : "☀"}
-          </button>
-        </div>
-      </div>
 
-      {/* Mobile drop panel (slides the site down visually via CSS) */}
-      <div
-        id="mobile-menu"
-        className={`mobile-menu ${menuOpen ? "open" : ""}`}
-        role="dialog"
-        aria-modal="true"
-      >
-        <nav className="mobile-nav">
-          <button onClick={() => go("work")} className="navbig">Work</button>
-          <button onClick={() => go("archive")} className="navbig">Archive</button>
-          <button onClick={() => go("info")} className="navbig">Info</button>
+          <a className={current === "archive" ? "active" : ""} onClick={() => navigate("archive")}>
+            Archive
+          </a>
+
+          <a className={current === "info" ? "active" : ""} onClick={() => navigate("info")}>
+            Info
+          </a>
+
+          {/* Sounds cell: text + play/pause button */}
+          <div className="sounds-cell">
+            <button
+              className={(current === "sounds" || soundOpen) ? "active" : ""}
+              onClick={() => setSoundOpen(v => !v)}
+              aria-expanded={soundOpen}
+              aria-controls="sound-overlay"
+            >
+              Sounds
+            </button>
+
+            <button className="sound-pp" aria-label={isPlaying ? "Pause" : "Play"} onClick={togglePlay}>
+              {isPlaying ? "❚❚" : "►"}
+            </button>
+
+          </div>
         </nav>
       </div>
 
-      {/* Sounds overlay */}
-      <div className={`sounds-panel ${soundOpen ? "open" : ""}`}>
-        <div className="container">
-          <div className="sounds-list">
-            {SOUNDS.map((t, i) => (
-              <button
-                key={t.title + i}
-                className={`track ${trackIdx === i ? "active" : ""}`}
-                onClick={() => {
-                  setTrackIdx(i);
-                  // load & play
-                  if (audioRef.current) {
-                    audioRef.current.src = t.src;
-                    audioRef.current.play().catch(() => {});
-                  }
-                }}
+      {/* Work overlay (hover) */}
+      <div className={`work-overlay ${workOpen ? "open" : ""}`} onMouseEnter={() => setWorkOpen(true)}>
+        <div className="sheet">
+          <div className="container inner">
+            <div className="work-thumb">
+              {hoveredWork?.thumb ? <img src={hoveredWork.thumb} alt="" /> : null}
+            </div>
+            <div className="work-list">
+              {WORKS.filter(w => w.slug !== "videos").map((w) => (
+                <div
+                  key={w.slug}
+                  className="work-item"
+                  onMouseEnter={() => setHoverSlug(w.slug)}
+                  onClick={() => { setWorkOpen(false); navigate(`work/${w.slug}`); }}
+                >
+                  {w.title}
+                </div>
+              ))}
+              <div
+                className="work-item"
+                onMouseEnter={() => setHoverSlug("videos")}
+                onClick={() => { setWorkOpen(false); navigate(`work/videos`); }}
               >
-                {t.title}
-              </button>
-            ))}
+                Videos
+              </div>
+            </div>
           </div>
+        </div>
+      </div>
 
-          {/* mini player */}
-          <div className="mini-player">
-            <span className="mp-title">
-              {currentTrack ? currentTrack.title : "—"}
-            </span>
-            <div className="mp-controls">
-              <button
-                onClick={() => {
-                  if (!audioRef.current) return;
-                  if (audioRef.current.paused) audioRef.current.play();
-                  else audioRef.current.pause();
-                }}
-                aria-label={isPlaying ? "Pause" : "Play"}
-              >
-                {isPlaying ? "Pause" : "Play"}
-              </button>
-              <button
-                onClick={() => {
-                  const next = (trackIdx == null ? 0 : trackIdx + 1) % SOUNDS.length;
-                  setTrackIdx(next);
-                  if (audioRef.current) {
-                    audioRef.current.src = SOUNDS[next].src;
-                    audioRef.current.play().catch(() => {});
-                  }
-                }}
-                aria-label="Next track"
-              >
-                Next
-              </button>
+      {/* Sounds overlay (click outside closes) */}
+      <div
+        id="sound-overlay"
+        className={`sound-overlay ${soundOpen ? "open" : ""}`}
+        onMouseDown={(e) => e.stopPropagation()}
+        onMouseLeave={() => setSoundOpen(false)}
+      >
+        <div className="sheet" onMouseDown={(e) => e.stopPropagation()}>
+          <div className="container inner">
+            <div className="disc-grid">
+              {SOUNDS.map((t, i) => (
+                <button
+                  key={t.title + i}
+                  className={`disc ${trackIdx === i ? "active" : ""}`}
+                  onClick={() => playTrack(i)}
+                >
+                  <svg viewBox="0 0 100 100" className="disc-svg" aria-hidden="true">
+                    <defs>
+                      <radialGradient id={`g${i}`} cx="50%" cy="50%">
+                        <stop offset="0%"   stopColor="#eee"/>
+                        <stop offset="100%" stopColor="#c2c6cc"/>
+                      </radialGradient>
+                    </defs>
+                    <circle cx="50" cy="50" r="48" fill={`url(#g${i})`} stroke="currentColor" strokeWidth="0.6"/>
+                    <circle cx="50" cy="50" r="7"  fill="var(--bg)" stroke="currentColor" strokeWidth="0.6"/>
+                  </svg>
+                  <div className="disc-title">{t.title}</div>
+                </button>
+              ))}
             </div>
           </div>
         </div>
@@ -468,138 +455,178 @@ function Header({
 /* =========================================================
    5) Pages
    ========================================================= */
+function Home({ theme, setTheme }) {
+  const lightRef = React.useRef(null);
+  const darkRef  = React.useRef(null);
 
-function Home({ theme }) {
-  // preload + no-jank and click-play fallback
-  const lightRef = useRef(null);
-  const darkRef = useRef(null);
-
-  useEffect(() => {
-    const ensurePlay = (v) => v && v.play().catch(() => {});
-    [lightRef.current, darkRef.current].forEach((v) => {
+  React.useEffect(() => {
+    [lightRef.current, darkRef.current].forEach(v => {
       if (!v) return;
       v.preload = "auto";
-      const tryPlay = () => ensurePlay(v);
-      v.addEventListener("canplay", tryPlay, { once: true });
+      const tryPlay = () => v.play().catch(()=>{});
+      v.addEventListener("canplay", tryPlay, { once:true });
       tryPlay();
     });
-    return () => {
-      [lightRef.current, darkRef.current].forEach((v) => {
-        if (v) v.removeEventListener("canplay", () => {});
-      });
-    };
   }, []);
 
   const showLight = theme !== "dark";
-  const hero = HERO[theme] || HERO.light;
 
   return (
     <div className="container" style={{ paddingTop: 36 }}>
-      {/* fixed-height wrapper prevents any layout jump */}
+      {/* fixed-height box prevents any vertical jump */}
       <div className="hero-wrap">
         <video
           ref={lightRef}
           className="hero-video"
-          src={HERO.light.src}
-          poster={HERO.light.poster}
-          playsInline
-          muted
-          autoPlay
-          loop
+          src="/webland-light.mp4"
+          poster="/hero_light.jpg"
+          playsInline muted autoPlay loop
           style={{ opacity: showLight ? 1 : 0 }}
         />
         <video
           ref={darkRef}
           className="hero-video"
-          src={HERO.dark.src}
-          poster={HERO.dark.poster}
-          playsInline
-          muted
-          autoPlay
-          loop
+          src="/webland3.mp4"
+          poster="/hero_poster.jpg"
+          playsInline muted autoPlay loop
           style={{ opacity: showLight ? 0 : 1 }}
         />
-        {/* overlay title safe area if you need it */}
+      </div>
+
+      {/* stays below; no more “jump to center” */}
+      <ThemeToggle theme={theme} setTheme={setTheme} />
+    </div>
+  );
+}
+
+
+
+function VideosGrid({ navigate }) {
+  const supportsHover =
+    typeof window !== "undefined" &&
+    window.matchMedia &&
+    window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+
+  const onEnter = (e) => {
+    if (!supportsHover) return;
+    const v = e.currentTarget;
+    v.muted = true;
+    try { v.currentTime = 0; v.play().catch(()=>{}); } catch {}
+  };
+  const onLeave = (e) => {
+    const v = e.currentTarget;
+    try { v.pause(); v.currentTime = 0; } catch {}
+  };
+
+  return (
+    <div className="container">
+      <div className="grid videos" style={{ marginTop: 24 }}>
+        {VIDEOS.map((v) => (
+          <div className="card video-card" key={v.slug}>
+            <div
+              className="video-frame"
+              role="button"
+              tabIndex={0}
+              onClick={() => navigate(`work/videos/${v.slug}`)}
+              onKeyDown={(e) => e.key === "Enter" && navigate(`work/videos/${v.slug}`)}
+            >
+              <video
+                src={v.src}
+                poster={v.poster}
+                preload="metadata"
+                playsInline
+                muted
+                controls={false}
+                onMouseEnter={onEnter}
+                onMouseLeave={onLeave}
+              />
+            </div>
+
+            <div className="video-meta">
+              <div className="video-title">{v.title}</div>
+              {v.subtitle && <div className="video-subtitle">{v.subtitle}</div>}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
 }
 
-function Work({ navigate }) {
-  return (
-    <div className="container" style={{ paddingTop: 40 }}>
-      <ul className="work-list">
-        {WORKS.map((w) => (
-          <li key={w.slug}>
-            <button className="work-link" onClick={() => navigate(`work/${w.slug}`)}>
-              {w.title}
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-/* -------------------- mobile swipe helper -------------------- */
-function useSwipe({ onLeft, onRight, threshold = 40 }) {
-  const startX = useRef(null);
-  const startY = useRef(null);
-  const dragging = useRef(false);
-
-  const onTouchStart = (e) => {
-    const t = e.changedTouches && e.changedTouches[0];
-    if (!t) return;
-    startX.current = t.clientX;
-    startY.current = t.clientY;
-    dragging.current = true;
-  };
-
-  const onTouchEnd = (e) => {
-    if (!dragging.current) return;
-    const t = e.changedTouches && e.changedTouches[0];
-    if (!t) return;
-    const dx = t.clientX - startX.current;
-    const dy = t.clientY - startY.current;
-    dragging.current = false;
-
-    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > threshold) {
-      if (dx < 0) onLeft && onLeft();
-      else onRight && onRight();
-    }
-  };
-
-  return { onTouchStart, onTouchEnd };
-}
-/* ------------------------------------------------------------- */
-
-function Project({ slug, navigate }) {
-  const work = WORKS.find((w) => w.slug === slug);
-  const [idx, setIdx] = useState(0);
+function VideoView({ vidSlug, navigate }) {
+  const findIndex = (slug) => VIDEOS.findIndex(v => v.slug === slug);
+  const initial = findIndex(vidSlug);
+  const [idx, setIdx] = useState(initial >= 0 ? initial : 0);
 
   useEffect(() => {
-    setIdx(0);
-  }, [slug]);
+    const i = findIndex(vidSlug);
+    setIdx(i >= 0 ? i : 0);
+  }, [vidSlug]);
+
+  const prev = () => setIdx(i => {
+    const ni = (i - 1 + VIDEOS.length) % VIDEOS.length;
+    navigate(`work/videos/${VIDEOS[ni].slug}`);
+    return ni;
+  });
+
+  const next = () => setIdx(i => {
+    const ni = (i + 1) % VIDEOS.length;
+    navigate(`work/videos/${VIDEOS[ni].slug}`);
+    return ni;
+  });
+
+  // Arrow keys only
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "ArrowLeft") prev();
+      if (e.key === "ArrowRight") next();
+      if (e.key === "Escape") navigate("work/videos");
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+
+  const v = VIDEOS[idx];
+
+  return (
+    <div className="container">
+      <div className="slide-wrap">
+        <figure className="slide">
+          <div className="slide-viewport">
+            <video
+              key={v.slug}
+              src={v.src}
+              poster={v.poster}
+              playsInline
+              controls
+              autoPlay
+            />
+          </div>
+        </figure>
+
+        <div className="title">{v.title}</div>
+        {v.subtitle && <div className="counter">{v.subtitle}</div>}
+      </div>
+    </div>
+  );
+}
+
+
+function Project({ slug }) {
+  const work = WORKS.find((w) => w.slug === slug);
+  const [idx, setIdx] = useState(0);
+  useEffect(() => { setIdx(0); }, [slug]);
 
   if (!work) {
-    return (
-      <div className="container" style={{ paddingTop: 40 }}>
-        Not found.
-      </div>
-    );
+    return <div className="container" style={{ paddingTop: 40 }}>Not found.</div>;
   }
 
   const total = work.media.length;
   const prev = () => setIdx((i) => (i - 1 + total) % total);
   const next = () => setIdx((i) => (i + 1) % total);
 
-  const swipe = useSwipe({ onLeft: next, onRight: prev });
-
   useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === "ArrowLeft") prev();
-      if (e.key === "ArrowRight") next();
-    };
+    const onKey = (e) => { if (e.key === "ArrowLeft") prev(); if (e.key === "ArrowRight") next(); };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [total]);
@@ -607,47 +634,51 @@ function Project({ slug, navigate }) {
   return (
     <div className="container">
       <div className="slide-wrap">
-        <figure
-          className="slide click-zones"
-          onTouchStart={swipe.onTouchStart}
-          onTouchEnd={swipe.onTouchEnd}
-        >
+        <figure className="slide click-zones">
           {total > 0 ? (
             <>
               <div className="slide-viewport">
-                <img
-                  src={work.media[idx]}
-                  alt={`${work.title} ${idx + 1}/${total}`}
-                />
+                <img src={work.media[idx]} alt={`${work.title} ${idx + 1}/${total}`} />
               </div>
               <button aria-label="Previous" onClick={prev} style={{ left: 0 }} />
               <button aria-label="Next" onClick={next} style={{ right: 0 }} />
             </>
-          ) : null}
-          <figcaption className="caption">
-            {work.captions?.[idx] || work.title}
-          </figcaption>
+          ) : (
+            <div style={{ aspectRatio: '3/2', background: '#f3f4f6' }} />
+          )}
         </figure>
+
+        <div className="counter">{total ? `${idx + 1} / ${total}` : ""}</div>
+        <div className="title">{work.title}</div>
+
+        {work.caption && (
+          <p className="caption">
+            {work.caption}
+            {work.pdf ? (<> <a href={work.pdf} target="_blank" rel="noopener noreferrer" className="pdf-link">click here for full magazine pdf</a></>) : null}
+          </p>
+        )}
       </div>
     </div>
   );
 }
 
-function Archive({ navigate }) {
+function ArchiveGrid({ navigate }) {
   return (
-    <div className="container" style={{ paddingTop: 40 }}>
-      <ul className="work-list">
-        {ARCHIVE.map((a) => (
-          <li key={a.slug}>
-            <button
-              className="work-link"
-              onClick={() => navigate(`archive/${a.slug}`)}
-            >
-              {a.title}
-            </button>
-          </li>
+    <div className="container" style={{ marginTop: 24 }}>
+      <div className="grid archive">
+        {ARCHIVE.map((item) => (
+          <button
+            key={item.slug}
+            className="card archive-cell"
+            onClick={() => navigate(`archive/${item.slug}`)}
+            aria-label={`Open ${item.title}`}
+            style={{ aspectRatio: "3/4", padding: 0, border: 0, background: "transparent", cursor: "zoom-in" }}
+          >
+            <img src={item.src} alt={item.caption || item.title} loading="lazy" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+            <div className="archive-overlay"><div className="archive-overlay-label">{item.caption}</div></div>
+          </button>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }
@@ -656,32 +687,13 @@ function ArchiveView({ aSlug, navigate }) {
   const findIndex = (slug) => ARCHIVE.findIndex((a) => a.slug === slug);
   const [idx, setIdx] = useState(Math.max(0, findIndex(aSlug)));
 
-  useEffect(() => {
-    const i = findIndex(aSlug);
-    if (i !== -1) setIdx(i);
-  }, [aSlug]);
+  useEffect(() => { const i = findIndex(aSlug); if (i !== -1) setIdx(i); }, [aSlug]);
 
-  const prev = () =>
-    setIdx((i) => {
-      const ni = (i - 1 + ARCHIVE.length) % ARCHIVE.length;
-      navigate(`archive/${ARCHIVE[ni].slug}`);
-      return ni;
-    });
-  const next = () =>
-    setIdx((i) => {
-      const ni = (i + 1) % ARCHIVE.length;
-      navigate(`archive/${ARCHIVE[ni].slug}`);
-      return ni;
-    });
-
-  const swipe = useSwipe({ onLeft: next, onRight: prev });
+  const prev = () => setIdx((i) => { const ni = (i - 1 + ARCHIVE.length) % ARCHIVE.length; navigate(`archive/${ARCHIVE[ni].slug}`); return ni; });
+  const next = () => setIdx((i) => { const ni = (i + 1) % ARCHIVE.length; navigate(`archive/${ARCHIVE[ni].slug}`); return ni; });
 
   useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === "ArrowLeft") prev();
-      if (e.key === "ArrowRight") next();
-      if (e.key === "Escape") navigate("archive");
-    };
+    const onKey = (e) => { if (e.key === "ArrowLeft") prev(); if (e.key === "ArrowRight") next(); if (e.key === "Escape") navigate("archive"); };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, []);
@@ -691,93 +703,117 @@ function ArchiveView({ aSlug, navigate }) {
   return (
     <div className="container">
       <div className="slide-wrap">
-        <figure
-          className="slide click-zones"
-          onTouchStart={swipe.onTouchStart}
-          onTouchEnd={swipe.onTouchEnd}
-        >
-          <div className="slide-viewport">
-            <img
-              key={a.slug}
-              src={a.src}
-              alt={a.caption || a.title}
-              loading="lazy"
-              style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-            />
-          </div>
+        <figure className="slide click-zones">
+          <div className="slide-viewport"><img key={a.slug} src={a.src} alt={a.caption || a.title} /></div>
           <button aria-label="Previous" onClick={prev} style={{ left: 0 }} />
           <button aria-label="Next" onClick={next} style={{ right: 0 }} />
         </figure>
+
+        {/* Top line = location */}
+        <div className="title">{a.caption || a.title}</div>
+        {/* Bottom line = label/custom subtitle */}
+        <div className="counter">{a.subtitle ?? a.title}</div>
       </div>
     </div>
   );
 }
+
 
 function Info() {
+  // language + expand state
+  const [lang, setLang] = useState("en");
+  const [expanded, setExpanded] = useState(false);
+
+  // rotate through languages on logo click
+  const cycleLang = () => {
+    const idx = LANG_ORDER.indexOf(lang);
+    const next = LANG_ORDER[(idx + 1) % LANG_ORDER.length];
+    setLang(next);
+  };
+
+  const data = INFO_I18N[lang] || INFO_I18N.en;
+  const hasMore = !!(data.more && data.more.trim().length);
+
   return (
-    <div className="container" style={{ paddingTop: 40 }}>
-      <p>{SITE.bio}</p>
+    <section className="info-page">
+      <div className="info-container">
+        <p className="info-body">
+          {data.para}
+          {expanded && hasMore ? " " + data.more : ""}
+        </p>
+
+        {hasMore && (
+          <button
+            type="button"
+            className="info-toggle"
+            aria-expanded={expanded}
+            onClick={() => setExpanded(v => !v)}
+          >
+            {expanded ? "Read less" : "Read more"}
+          </button>
+        )}
+
+        <div className="info-contacts">
+          Email: <a href={`mailto:${SITE.email}`}>{SITE.email}</a><br />
+          Instagram: <a href={SITE.ig} target="_blank" rel="noreferrer">@kellencosgrave</a>
+        </div>
+
+        {/* logo button that cycles language */}
+        <button
+          type="button"
+          className="info-logo-ghost"
+          onClick={cycleLang}
+          aria-label="Change language"
+          title="Change language"
+        >
+          <img src="/logo.svg" alt="" className="info-logo" />
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function ComingSoon() {
+  return <div className="container" style={{ marginTop: 40, color: 'var(--muted)' }}>Coming soon.</div>;
+}
+
+/* =========================================================
+   Intro (overlay animation)  ——— paste above export default App
+   ========================================================= */
+function Intro({ onDone, navLeft = "Kellen Cosgrave", navRight = "Creative Works" }) {
+  // match your CSS timing: line draws (1.1s), slight hold, then slide/fade out (~0.6s)
+  useEffect(() => {
+    const total = 1700; // safe overall window before we call onDone (adjust to taste)
+    const t = setTimeout(() => onDone?.(), total);
+    return () => clearTimeout(t);
+  }, [onDone]);
+
+  return (
+    <div className="intro" role="presentation" aria-hidden="true">
+      <div className="intro-inner">
+        <div className="intro-ticks" />
+        <div className="intro-row">
+          <div>{navLeft}</div>
+          <div>{navRight}</div>
+        </div>
+      </div>
     </div>
   );
 }
 
 /* =========================================================
-   6) Footer (Now Playing marquee + links)
+   6) App shell
    ========================================================= */
-function Footer({ isPlaying, trackIdx }) {
-  return (
-    <footer className="site-footer">
-      <div className="container row footer-grid">
-        <span className="foot-left">{SITE.name}</span>
+export default function App(){
+  const { parts, navigate } = useHashRoute();
+  const [page, slug] = parts.length ? parts : ["home", null];
 
-        {/* Now Playing — with marquee title */}
-        <div className="now-playing-wrap">
-          <span className="np-label">Now Playing&nbsp;</span>
-          <div className="np-track-mask" aria-live="polite">
-            <div className={`np-track ${isPlaying ? "scroll" : ""}`}>
-              <strong>
-                {trackIdx != null ? SOUNDS[trackIdx].title : "—"}
-              </strong>
-              {!isPlaying && trackIdx != null ? " (paused)" : ""}
-            </div>
-          </div>
-        </div>
-
-        <span className="foot-right" style={{ display: "flex", gap: "14px", justifySelf: "end" }}>
-          <a href={`mailto:${SITE.email}`}>Email</a>
-          <a href={SITE.ig} target="_blank" rel="noreferrer">Instagram</a>
-        </span>
-      </div>
-    </footer>
-  );
-}
-
-/* =========================================================
-   7) App (glue)
-   ========================================================= */
-function App() {
-  const [theme, setTheme] = useState("light");
-  const [page, setPage] = useState("home"); // home | work | project | archive | archiveView | info
-  const [slug, setSlug] = useState(null);
-
-  // very small hash-router (your project may already have navigate)
+  // THEME (persisted, light default)
+  const [theme, setTheme] = useState(() => localStorage.getItem("theme") || "light");
   useEffect(() => {
-    const apply = () => {
-      const hash = (location.hash || "#/").slice(2); // drop "#/"
-      const [p, s] = hash.split("/");
-      if (!p) { setPage("home"); setSlug(null); return; }
-      setPage(p);
-      setSlug(s || null);
-    };
-    apply();
-    window.addEventListener("hashchange", apply);
-    return () => window.removeEventListener("hashchange", apply);
-  }, []);
-
-  const navigate = (to) => {
-    if (to === "home") location.hash = "#/";
-    else location.hash = `#/${to}`;
-  };
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("theme", theme);
+  }, [theme]);
 
   // SOUNDS (global audio)
   const audioRef = useRef(null);
@@ -804,37 +840,126 @@ function App() {
     };
   }, []);
 
+  const playTrack = async (i) => {
+    const a = audioRef.current;
+    if (!a) return;
+
+    // same disc toggles play/pause
+    if (trackIdx === i && a.src) {
+      if (a.paused) { try { await a.play(); } catch {} }
+      else { a.pause(); }
+      return;
+    }
+
+    setTrackIdx(i);
+    a.src = SOUNDS[i].src;
+    a.currentTime = 0;
+
+    try { await a.play(); } catch {}
+  };
+
+  const togglePlay = async () => {
+    const a = audioRef.current;
+    if (!a) return;
+
+    // if nothing selected yet, default to the first (or current) track
+    if (!a.src) {
+      const i = trackIdx ?? 0;
+      setTrackIdx(i);
+      a.src = SOUNDS[i].src;
+    }
+
+    if (a.paused) { try { await a.play(); } catch {} }
+    else { a.pause(); }
+  };
+
+  // close Sounds overlay with ESC (audio keeps playing)
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") setSoundOpen(false); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+
+  const current = useMemo(() => (page === "work" && slug ? "work" : page), [page, slug]);
+
+  const Page = useMemo(() => {
+    if (page === "home") return <Home theme={theme} setTheme={setTheme} />;
+    if (page === "archive") {
+      const aSlug = parts[1] ?? null;
+      return aSlug ? <ArchiveView aSlug={aSlug} navigate={navigate} /> : <ArchiveGrid navigate={navigate} />;
+    }
+    if (page === "info") return <Info />;
+    if (page === "sounds") return <ComingSoon />;
+
+    if (page === "work" && slug === "videos") {
+      const vidSlug = parts[2] ?? null;
+      return vidSlug ? <VideoView vidSlug={vidSlug} navigate={navigate} /> : <VideosGrid navigate={navigate} />;
+    }
+    if (page === "work" && slug) return <Project slug={slug} />;
+
+    return <Home theme={theme} setTheme={setTheme} />;
+  }, [page, slug, parts, navigate, theme]);
+
+  /* ===== JSX #3 — intro state + effect (A) ===== */
+  const [showIntro, setShowIntro] = useState(() => {
+    // play on hard refresh / first load on home
+    return window.location.hash.replace("#", "") === "" || page === "home";
+  });
+
+  useEffect(() => {
+    // optional: replay intro when landing on home via browser refresh
+    if (page === "home" && performance?.navigation?.type === 1) {
+      setShowIntro(true);
+    }
+  }, [page]);
+
   return (
-    <div className={`app ${theme} ${soundOpen ? "sounds-open" : ""}`}>
+    <div className={`app ${showIntro ? "is-intro" : "is-ready"}`}>
+      {/* ===== JSX #3 — render Intro overlay (B) ===== */}
+      {showIntro && (
+        <Intro
+          navLeft="Kellen Cosgrave"
+          navRight="Creative Works"
+          onDone={() => setShowIntro(false)}
+        />
+      )}
+
       <Header
+        current={current}
+        navigate={navigate}
         theme={theme}
         setTheme={setTheme}
-        page={page}
-        setPage={setPage}
         soundOpen={soundOpen}
         setSoundOpen={setSoundOpen}
-        trackIdx={trackIdx}
-        setTrackIdx={setTrackIdx}
         isPlaying={isPlaying}
-        audioRef={audioRef}
-        navigate={navigate}
+        togglePlay={togglePlay}
+        tracks={SOUNDS}
+        playTrack={playTrack}
+        trackIdx={trackIdx}
       />
 
-      <main className="app-main">
-        {page === "home" && <Home theme={theme} />}
-        {page === "work" && <Work navigate={navigate} />}
-        {page === "project" && slug && <Project slug={slug} navigate={navigate} />}
-        {page === "archive" && <Archive navigate={navigate} />}
-        {page === "archive" && slug && <ArchiveView aSlug={slug} navigate={navigate} />}
-        {page === "info" && <Info />}
-      </main>
+      {/* hidden global audio element */}
+      <audio ref={audioRef} preload="metadata" onEnded={() => setIsPlaying(false)} />
 
-      <Footer isPlaying={isPlaying} trackIdx={trackIdx} />
+      <main className="app-main">{Page}</main>
 
-      {/* global audio element */}
-      <audio ref={audioRef} preload="auto" />
+      <footer className="site-footer">
+        <div className="container row">
+          <span className="foot-left">{SITE.name}</span>
+
+          {/* centered now-playing line */}
+          <span className="now-playing">
+            Now Playing:&nbsp;
+            <strong>{trackIdx != null ? SOUNDS[trackIdx].title : "—"}</strong>
+            {!isPlaying && trackIdx != null ? " (paused)" : ""}
+          </span>
+
+          <span className="foot-right" style={{ display: "flex", gap: "14px", justifySelf: "end" }}>
+            <a href={`mailto:${SITE.email}`}>Email</a>
+            <a href={SITE.ig} target="_blank" rel="noreferrer">Instagram</a>
+          </span>
+        </div>
+      </footer>
     </div>
   );
 }
-
-export default App;
