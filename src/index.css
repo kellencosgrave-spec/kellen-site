@@ -522,24 +522,26 @@ img,video{display:block;max-width:100%;height:auto}
   opacity: 1; transform: none;
 }
 
-/* --- Home hero: fixed box + crossfade --- */
-/* Match the original auto-height behavior, but keep layout stable */
+/* --- Home hero: same look as before, but stable during theme switch --- */
 .hero-wrap{
   position: relative;
   width: 100%;
-  aspect-ratio: 16 / 9;   /* use your video’s real ratio (likely 16:9) */
-  max-height: 720px;      /* optional: cap, similar to your old upper bound */
+
+  /* Use your video’s real ratio to mimic height:auto at full width.
+     Try 16 / 9 first; if it looks a bit too tall or too short, switch to 3 / 2. */
+  aspect-ratio: 16 / 9;
+
+  /* Keep it from getting overly tall on big screens (matches your site’s feel) */
+  max-height: var(--slide-h);
   overflow: hidden;
 }
 
-/* If you want zero cropping (like before), use contain; otherwise keep cover */
 .hero-video{
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;    /* ← shows full frame, like width:100% + height:auto */
-  background: #000;       /* hides any letterboxing nicely */
+  object-fit: cover;         /* ← full-bleed, no black bars */
   transition: opacity 180ms ease;
   will-change: opacity;
 }
