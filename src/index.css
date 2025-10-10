@@ -546,4 +546,57 @@ img,video{display:block;max-width:100%;height:auto}
   will-change: opacity;
 }
 
+/* ---------- Mobile-only header & menu ---------- */
+@media (max-width:700px){
+  .desktop-only{ display:none !important; }
+  .mobile-only{ display:inline-block !important; }
+
+  .nav{
+    grid-template-columns: 1fr 1fr 1fr; /* left / center / right */
+  }
+  .nav a:first-child{ grid-column:1; text-align:left; }
+  .nav-center{ grid-column:2; justify-self:center; }
+
+  /* Slide-down panel that appears ABOVE the tick bar */
+  .mobile-menu-panel{
+    position: relative;        /* sits inside header */
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height .28s ease, padding .28s ease;
+    padding: 0;
+    background: var(--bg);
+  }
+  .mobile-menu-panel.open{
+    max-height: 60vh;          /* scrolls internally if taller */
+    padding: 16px 0 12px;
+    border-bottom: 1px solid rgba(0,0,0,.06);
+  }
+  .mobile-menu-list{ display:flex; flex-direction:column; gap:14px; }
+  .mobile-menu-list .menu-item{
+    text-align:left; background:none; border:0; padding:6px 0; font:inherit; cursor:pointer;
+  }
+
+  .mobile-projects{
+    display:flex; flex-direction:column; gap:10px; margin: 2px 0 8px 0;
+    padding-left: 0;
+  }
+  .mobile-projects .project-link{
+    background:none; border:0; padding:4px 0; text-align:left; font:inherit; color:var(--muted);
+  }
+  .mobile-projects .project-link:hover{ color:var(--text); }
+
+  /* When menu is open, push main content a touch (header grows naturally) */
+  body.menu-open .app-main{ transition: margin-top .28s ease; }
+
+  /* Hero: center the video & the theme toggles */
+  .container.hero-container{ display:grid; place-items:center; padding-top: 8px; }
+  .theme-chooser{ margin-top: 10px; }
+}
+
+/* Slightly smaller project image so caption fits between header/footer on phones */
+@media (max-width:700px){
+  :root{ --slide-h: clamp(320px, 54vh, 600px); } /* was 65vh on desktop */
+  .caption{ padding: 0 8px; }
+}
+
 

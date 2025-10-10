@@ -334,6 +334,22 @@ function Header({
   const [workOpen, setWorkOpen] = useState(false);
   const [hoverSlug, setHoverSlug] = useState(WORKS[0]?.slug || null);
 
+// NEW: mobile menu state
+  const [mMenuOpen, setMMenuOpen] = useState(false);
+  const [mWorkOpen, setMWorkOpen] = useState(false);
+  const isTouch = typeof window !== "undefined" &&
+                  window.matchMedia?.("(hover: none)").matches;
+  const isMobile = typeof window !== "undefined" &&
+                  window.matchMedia?.("(max-width: 700px)").matches;
+
+// Close Sounds when navigating to another page
+  const safeNavigate = (to) => {
+    setSoundOpen(false);
+    setMMenuOpen(false);
+    setMWorkOpen(false);
+    navigate(to);
+  };
+
   const hoveredWork = WORKS.find(w => w.slug === hoverSlug) || WORKS[0];
 
   // ESC closes Sounds overlay (audio keeps playing)
@@ -345,28 +361,75 @@ function Header({
 
   return (
     <header className="site-header" onMouseLeave={() => setWorkOpen(false)}>
+      {/* MOBILE: drop-down panel lives at the very top; desktop keeps it hidden */}
+      <div className={`mobile-menu-panel ${mMenuOpen ? "open" : ""}`}>
+        <div className="container">
+          <nav className="mobile-menu-list" aria-label="Mobile menu">
+            <button className="menu-item" onClick={() => setMWorkOpen(v => !v)}>
+              Work
+            </button>
+            {mWorkOpen && (
+              <div className="mobile-projects">
+                {WORKS.filter(w => w.slug !== "videos").map((w) => (
+                  <button
+                    key={w.slug}
+                    className="project-link"
+                    onClick={() => safeNavigate(`work/${w.slug}`)}
+                  >
+                    {w.title}
+                  </button>
+                ))}
+                <button className="project-link" onClick={() => safeNavigate("work/videos")}>
+                  Videos
+                </button>
+              </div>
+            )}
+
+            <button className="menu-item" onClick={() => safeNavigate("archive")}>Archive</button>
+            <button className="menu-item" onClick={() => safeNavigate("info")}>Info</button>
+          </nav>
+        </div>
+      </div>
+
+      {/* Tick bar */}
       <div className="ticks" />
+
       <div className="container row">
         <nav className="nav">
-          <a onClick={() => navigate("home")}>Kellen Cosgrave</a>
+          {/* LEFT: name (always) */}
+          <a onClick={() => safeNavigate("home")}>Kellen Cosgrave</a>
 
+          {/* CENTER (mobile): Menu/Close */}
           <button
-            className={current === "work" ? "active" : ""}
-            onMouseEnter={() => setWorkOpen(true)}
-            onClick={() => navigate("work/night-vision")}
+            className="nav-center mobile-only"
+            onClick={() => setMMenuOpen(o => !o)}
+            aria-expanded={mMenuOpen}
+            aria-controls="mobile-menu-panel"
+          >
+            {mMenuOpen ? "Close" : "Menu"}
+          </button>
+
+          {/* Desktop “Work” behaves like before (hover); on touch it toggles the overlay */}
+          <button
+            className={`desktop-only ${current === "work" ? "active" : ""}`}
+            onMouseEnter={() => !isTouch && setWorkOpen(true)}
+            onClick={() => {
+              if (isTouch || isMobile) setWorkOpen(v => !v);
+              else safeNavigate("work/night-vision");
+            }}
           >
             Work
           </button>
 
-          <a className={current === "archive" ? "active" : ""} onClick={() => navigate("archive")}>
+          <a className={`desktop-only ${current === "archive" ? "active" : ""}`} onClick={() => safeNavigate("archive")}>
             Archive
           </a>
 
-          <a className={current === "info" ? "active" : ""} onClick={() => navigate("info")}>
+          <a className={`desktop-only ${current === "info" ? "active" : ""}`} onClick={() => safeNavigate("info")}>
             Info
           </a>
 
-          {/* Sounds cell: text + play/pause button */}
+          {/* RIGHT: Sounds + play/pause (always) */}
           <div className="sounds-cell">
             <button
               className={(current === "sounds" || soundOpen) ? "active" : ""}
@@ -376,11 +439,9 @@ function Header({
             >
               Sounds
             </button>
-
             <button className="sound-pp" aria-label={isPlaying ? "Pause" : "Play"} onClick={togglePlay}>
               {isPlaying ? "❚❚" : "►"}
             </button>
-
           </div>
         </nav>
       </div>
@@ -472,7 +533,7 @@ function Home({ theme, setTheme }) {
   const showLight = theme !== "dark";
 
   return (
-    <div className="container" style={{ paddingTop: 36 }}>
+    <div className="container has-hero" style={{ paddingTop: 36 }}>
       {/* fixed-height box prevents any vertical jump */}
       <div className="hero-wrap">
         <video
@@ -907,6 +968,11 @@ export default function App(){
   });
 
   useEffect(() => {
+    // lock header height when menu open (so page content shifts down smoothly)
+    document.body.classList.toggle("menu-open", mMenuOpen);
+  }, [mMenuOpen]);
+
+  useEffect(() => {
     // optional: replay intro when landing on home via browser refresh
     if (page === "home" && performance?.navigation?.type === 1) {
       setShowIntro(true);
@@ -943,23 +1009,27 @@ export default function App(){
 
       <main className="app-main">{Page}</main>
 
-      <footer className="site-footer">
-        <div className="container row">
-          <span className="foot-left">{SITE.name}</span>
+<footer className="site-footer">
+  <div className="container row footer-grid">
+    <span className="foot-left">{SITE.name}</span>
 
-          {/* centered now-playing line */}
-          <span className="now-playing">
-            Now Playing:&nbsp;
-            <strong>{trackIdx != null ? SOUNDS[trackIdx].title : "—"}</strong>
-            {!isPlaying && trackIdx != null ? " (paused)" : ""}
-          </span>
-
-          <span className="foot-right" style={{ display: "flex", gap: "14px", justifySelf: "end" }}>
-            <a href={`mailto:${SITE.email}`}>Email</a>
-            <a href={SITE.ig} target="_blank" rel="noreferrer">Instagram</a>
-          </span>
+    {/* Now Playing — with marquee title */}
+    <div className="now-playing-wrap">
+      <span className="np-label">Now Playing&nbsp;</span>
+      <div className="np-track-mask" aria-live="polite">
+        <div className={`np-track ${isPlaying ? "scroll" : ""}`}>
+          <strong>{trackIdx != null ? SOUNDS[trackIdx].title : "—"}</strong>
+          {!isPlaying && trackIdx != null ? " (paused)" : ""}
         </div>
-      </footer>
+      </div>
+    </div>
+
+    <span className="foot-right">
+      <a href={`mailto:${SITE.email}`}>Email</a>
+      <a href={SITE.ig} target="_blank" rel="noreferrer">Instagram</a>
+    </span>
+  </div>
+</footer>
     </div>
   );
 }
