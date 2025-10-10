@@ -498,9 +498,9 @@ function Header({
 // Swipe helper used by Project & ArchiveView (mobile-friendly)
 // ------------------------------------------------------------
 function useSwipe({ onLeft, onRight, threshold = 40 }) {
-  const startX = React.useRef(null);
-  const startY = React.useRef(null);
-  const dragging = React.useRef(false);
+  const startX = useRef(null);
+  const startY = useRef(null);
+  const dragging = useRef(false);
 
   const onTouchStart = (e) => {
     const t = e.changedTouches[0];
