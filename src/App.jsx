@@ -533,7 +533,7 @@ function Home({ theme, setTheme }) {
   const showLight = theme !== "dark";
 
   return (
-    <div className="container has-hero" style={{ paddingTop: 36 }}>
+    <div className="container" style={{ paddingTop: 36 }}>
       {/* fixed-height box prevents any vertical jump */}
       <div className="hero-wrap">
         <video
@@ -1010,21 +1010,19 @@ export default function App(){
       <main className="app-main">{Page}</main>
 
 <footer className="site-footer">
-  <div className="container row footer-grid">
+  <div className="container row">
     <span className="foot-left">{SITE.name}</span>
 
-    {/* Now Playing — with marquee title */}
-    <div className="now-playing-wrap">
-      <span className="np-label">Now Playing&nbsp;</span>
-      <div className="np-track-mask" aria-live="polite">
-        <div className={`np-track ${isPlaying ? "scroll" : ""}`}>
-          <strong>{trackIdx != null ? SOUNDS[trackIdx].title : "—"}</strong>
-          {!isPlaying && trackIdx != null ? " (paused)" : ""}
-        </div>
-      </div>
-    </div>
+    <span className="now-playing">
+      Now Playing:&nbsp;
+      <strong>{trackIdx != null ? SOUNDS[trackIdx].title : "—"}</strong>
+      {!isPlaying && trackIdx != null ? " (paused)" : ""}
+    </span>
 
-    <span className="foot-right">
+    <span
+      className="foot-right"
+      style={{ display: "flex", gap: "14px", justifySelf: "end" }}
+    >
       <a href={`mailto:${SITE.email}`}>Email</a>
       <a href={SITE.ig} target="_blank" rel="noreferrer">Instagram</a>
     </span>
