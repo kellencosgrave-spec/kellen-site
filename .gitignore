@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.env
+.DS_Store
+public/webland-light.mp4
+public/webland3.mp4
+public/pdfs/night-vision.pdf

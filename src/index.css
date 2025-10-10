@@ -1,0 +1,523 @@
+/* ---------- Global reset & tokens ---------- */
+:root{
+  --bg:#fff;
+  --text:#111;
+  --muted:#6b7280;
+  --muted-2:#9ca3af;
+  --accent:#111;
+  --overlay:rgba(255,255,255,.92);
+
+  --header-h:64px;      /* fixed header */
+  --footer-h:48px;      /* fixed footer */
+  --max-body:1400px;    /* page container */
+  --slide-max:700px;    /* max slide width */
+  --pad-x:28px;         /* page gutters */
+  --pad-top:56px;       /* extra top breathing space above images */
+  --pad-bot:36px;       /* space below images before counter/caption */
+  --tick-h:14px;        /* the little “ticks” strip height */
+
+  --disc-size: 96px;    /* CD width/height in Sounds overlay */
+}
+
+*{box-sizing:border-box}
+html,body,#root{height:100%}
+html,body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  font-family:-apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, "Segoe UI", Roboto, sans-serif;
+  font-size:16px;
+  line-height:1.35;
+}
+
+img,video{display:block;max-width:100%;height:auto}
+
+/* ---------- App layout shell ---------- */
+.app{ min-height:100%; }
+.app-main{
+  padding-top:calc(var(--header-h) + var(--tick-h));
+  padding-bottom:calc(var(--footer-h) + 40px);
+}
+.container{
+  width:100%;
+  max-width:var(--max-body);
+  margin:0 auto;
+  padding:0 var(--pad-x);
+}
+
+/* ---------- Header (fixed), evenly spaced nav ---------- */
+.site-header{
+  position:fixed; top:0; left:0; right:0; z-index:50;
+  background:var(--bg);
+}
+
+/* Ticks bar – animated on initial load */
+.site-header .ticks{
+  position: relative;
+  height: var(--tick-h);
+  overflow: hidden;
+}
+
+/* draw the ticks on a pseudo-element so we can transform it */
+.site-header .ticks::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  /* same pattern you had before */
+  background:
+    repeating-linear-gradient(
+      to right,
+      transparent 0 8px,
+      var(--text) 8px 9px
+    );
+  opacity:.9;
+
+  /* animation: quick slant right, then back */
+  transform-origin: center;
+  animation: ticks-wink 420ms cubic-bezier(.2,.7,.2,1) 120ms both;
+}
+
+/* one-shot “wink” */
+@keyframes ticks-wink{
+  0%   { transform: skewX(0deg); }
+  45%  { transform: skewX(10deg); }
+  100% { transform: skewX(0deg); }
+}
+
+/* Respect reduced-motion */
+@media (prefers-reduced-motion: reduce){
+  .site-header .ticks::before{ animation:none; }
+}
+
+.site-header .row{ height:var(--header-h); display:flex; align-items:center; }
+.nav{
+  display:grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 1fr; /* even spacing */
+  align-items:center;
+  gap:0;
+  width:100%;
+}
+.nav a,
+.nav button{
+  appearance:none; background:none; border:0; padding:0; margin:0;
+  cursor:pointer; font:inherit; color:var(--text); text-decoration:none; text-align:center;
+}
+.nav a:first-child{ text-align:left; }
+.nav a:hover, .nav button:hover{ color:var(--muted); }
+.nav .active{ text-decoration:underline; text-underline-offset:4px; }
+
+/* Sounds cell: keep button + play/pause to right edge with ~10px gap */
+.sounds-cell{ display:flex; align-items:center; justify-content:flex-end; gap:10px; }
+
+/* compact play/pause button */
+.sound-pp{
+  font:inherit; color:var(--text); background:transparent; border:0; cursor:pointer;
+  line-height:1; font-size:14px; padding:0 2px;
+}
+.sound-pp:hover{ color:var(--muted); }
+
+/* ---------- Work overlay ---------- */
+.work-overlay{
+  position:fixed; left:0; right:0;
+  top:calc(var(--header-h) + var(--tick-h));
+  z-index:45; display:none;
+}
+.work-overlay.open{ display:block; }
+.work-overlay .sheet{
+  background:var(--overlay);
+  border-top:1px solid rgba(0,0,0,.05);
+  border-bottom:1px solid rgba(0,0,0,.05);
+  padding:18px 0;
+}
+.work-overlay .inner{ display:flex; gap:28px; }
+.work-thumb{ width:320px; flex:0 0 320px; overflow:hidden; border-radius:0; align-self:flex-start; }
+.work-list{ display:flex; flex-direction:column; gap:6px; }
+.work-item{ text-align:left; font-size:15px; cursor:pointer; }
+.work-item:hover{ color:var(--muted); }
+
+/* ---------- Sounds overlay (same look as Work) ---------- */
+.sound-overlay{
+  position:fixed; left:0; right:0;
+  top:calc(var(--header-h) + var(--tick-h));
+  z-index:46; display:none;
+  /* click outside = close: this element receives the click */
+}
+.sound-overlay.open{ display:block; }
+.sound-overlay .sheet{
+  background:var(--overlay);
+  border-top:1px solid rgba(0,0,0,.05);
+  border-bottom:1px solid rgba(0,0,0,.05);
+  padding:18px 0;
+}
+.sound-overlay .inner{ padding:0; }
+
+/* 2x6 disc grid (mobile responsive) */
+.disc-grid{
+  display:grid;
+  gap:16px;
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
+}
+@media (min-width:700px){
+  .disc-grid{ grid-template-columns: repeat(4, minmax(120px, 1fr)); }
+}
+@media (min-width:1100px){
+  .disc-grid{ grid-template-columns: repeat(6, minmax(120px, 1fr)); }
+}
+.disc{
+  background:transparent; border:0; padding:8px 6px; cursor:pointer; text-align:center; color:var(--text);
+}
+.disc:hover{ color:var(--muted); }
+.disc-svg{ width:var(--disc-size); height:var(--disc-size); display:block; margin:0 auto; }
+.disc-title{ font-size:12px; margin-top:6px; color:var(--muted); }
+.disc.active .disc-svg{ filter: drop-shadow(0 0 0.8px var(--text)); }
+.disc.active .disc-title{ color:var(--text); }
+
+/* ---------- Slides / project page ---------- */
+.slide-wrap{ margin-top:var(--pad-top); }
+.slide{ max-width:var(--slide-max); margin:0 auto; }
+.counter{ margin-top:10px; text-align:center; color:var(--muted); font-size:12px; letter-spacing:.02em; }
+.title{ margin-top:16px; text-align:center; font-size:16px; font-weight:600; }
+.caption{
+  max-width:720px; margin:10px auto 0; text-align:center; color:var(--text); font-size:14px; line-height:1.45;
+}
+
+/* click zones for prev/next (hidden) */
+.click-zones{ position:relative; }
+.click-zones button{
+  position:absolute; top:0; bottom:0; width:50%;
+  background:transparent; border:0; padding:0; margin:0;
+}
+
+/* ---------- Grids ---------- */
+.grid{ display:grid; gap:18px; }
+.grid.videos{ grid-template-columns:1fr; }
+.grid.archive{ grid-template-columns:repeat(2,1fr); }
+@media (min-width:720px){
+  .grid.videos{ grid-template-columns:repeat(2,1fr); }
+  .grid.archive{ grid-template-columns:repeat(3,1fr); }
+}
+@media (min-width:1100px){
+  .grid.videos{ grid-template-columns:repeat(2,1fr); }
+  .grid.archive{ grid-template-columns:repeat(4,1fr); }
+}
+
+/* cards */
+.card{ border-radius:0; overflow:hidden; background:#f3f4f6; }
+.card .meta{ font-size:12px; color:var(--muted); padding:8px 10px 10px; }
+
+/* ---------- Footer (fixed) ---------- */
+.site-footer{
+  position:fixed; left:0; right:0; bottom:0; z-index:40;
+  height:var(--footer-h);
+  background:var(--bg);
+}
+.site-footer .row{
+  height:100%;
+  display:grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items:center;
+  color:var(--muted);
+  font-size:13px;
+}
+.foot-left{ justify-self:start; }
+.now-playing{ justify-self:center; color:var(--text); }
+.foot-right{ justify-self:end; }
+
+/* Utility */
+.hidden{ display:none !important; }
+
+/* ---------- Slide viewport (fixed height; contain media) ---------- */
+:root{ --slide-h: clamp(420px, 65vh, 720px); }
+.slide-viewport{
+  height: var(--slide-h);
+  display:flex; align-items:center; justify-content:center;
+}
+.slide-viewport img,
+.slide-viewport video{
+  max-height:100%; max-width:100%; height:auto; width:auto; object-fit:contain; border-radius:0;
+}
+
+/* ---------- Archive hover overlay ---------- */
+.archive-cell{ position: relative; aspect-ratio:3/4; background:#f3f4f6; }
+.archive-cell img{ width:100%; height:100%; object-fit:cover; display:block; }
+.archive-overlay{
+  position:absolute; inset:0; background:rgba(0,0,0,0.18); color:#fff;
+  display:flex; align-items:flex-end; justify-content:center; padding:12px; opacity:0; pointer-events:none;
+  transition: opacity .15s ease;
+}
+.archive-cell:hover .archive-overlay{ opacity:1; }
+.archive-overlay-label{
+  font-size:12px; line-height:1.3; letter-spacing:.02em;
+  background:rgba(0,0,0,0.55); padding:6px 10px;
+}
+
+/* ---------- Info page ---------- */
+.info-page{ padding-top:48px; text-align:left; }
+.info-container{ max-width:980px; margin:0 auto; padding:56px 24px 96px; }
+.info-body{
+  font-weight:400; letter-spacing:-0.01em; line-height:1.3;
+  font-size: clamp(22px, 3vw, 28px);
+  color: var(--text);             /* IMPORTANT: theme-aware */
+  margin-bottom:16px;
+}
+.info-toggle{
+  font:inherit; color:var(--muted); background:none; border:0; padding:0; cursor:pointer;
+  display:inline-block; margin-bottom:24px; text-decoration:none;
+}
+.info-toggle:hover, .info-toggle:focus-visible{ text-decoration:underline; }
+.info-contacts{ font-size:16px; line-height:1.6; color:var(--text); }
+.info-contacts a{ color:inherit; text-decoration:underline; text-underline-offset:3px; }
+@media (min-width:900px){ .info-body{ font-size:24px; } .info-contacts{ font-size:17px; } }
+
+/* Project caption + PDF link */
+.project-caption{ margin-top:12px; font-size:14px; line-height:1.6; color:var(--muted); max-width:720px; margin-left:auto; margin-right:auto; text-align:center; }
+.pdf-link{ text-decoration:underline; color:var(--muted); margin-left:6px; }
+.pdf-link:hover{ color:#000; }
+
+/* Info logo: small, spaced, and clickable */
+.info-logo{
+  width: 96px;                 /* tweak to taste */
+  height: auto;
+  margin-top: 24px;            /* space above logo */
+  display: block;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-drag: none;
+  opacity: .95;
+  transition: transform .15s ease, opacity .15s ease;
+}
+.info-logo:hover{ transform: translateY(-1px); opacity: 1; }
+.info-logo:active{ transform: translateY(0); }
+
+/* Right-to-left support when Arabic is active */
+.info-container.rtl .info-body,
+.info-container.rtl .info-contacts {
+  direction: rtl;
+  text-align: right;
+}
+
+
+/* ---------- Videos grid (tight vertical rhythm) ---------- */
+.grid.videos{ gap:12px; }
+@media (min-width:720px){ .grid.videos{ grid-template-columns:repeat(2,1fr); gap:14px 16px; } }
+.video-card{ background:transparent; padding:0; overflow:visible; }
+.video-frame{
+  position:relative; aspect-ratio:16/9; background:#f3f4f6; overflow:hidden; margin-bottom:6px; cursor:pointer;
+}
+.video-frame > video{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
+
+.video-meta{ margin-top:6px; }
+.video-title, .video-subtitle{ font-size:14px; line-height:1.25; margin:0; }
+.video-title{ color:#111 !important; font-weight:500; text-transform:none; letter-spacing:0; }
+.video-subtitle{ color:var(--muted) !important; font-weight:400; }
+
+/* ---------- Theme toggle icons under hero ---------- */
+.theme-chooser{
+  display:flex; justify-content:center; gap:16px; margin:10px 0 0;
+}
+.icon-btn{
+  border:0; background:transparent; cursor:pointer; padding:6px;
+  color:var(--muted); line-height:0;
+}
+.icon-btn .icon{ width:22px; height:22px; display:block; }
+.icon-btn.active{ color:var(--text); }       /* selected = dominant */
+.icon-btn:not(.active){ color:var(--muted);} /* deselected = grey */
+
+/* --- Dark theme overrides ---------------------------------------------- */
+:root[data-theme="dark"]{
+  --bg:#000;
+  --text:#fff;
+  --muted:#9ca3af;     /* lighter grey on black */
+  --muted-2:#6b7280;
+  --accent:#fff;
+  --overlay:rgba(0,0,0,.88);
+}
+
+/* Optional: small dark tweaks */
+:root[data-theme="dark"] .card{ background:#111; }
+:root[data-theme="dark"] .pdf-link:hover{ color:#fff; }
+
+/* Footer links: always the same muted grey, underlined */
+.site-footer a,
+.site-footer a:visited,
+.site-footer a:hover,
+.site-footer a:focus,
+.site-footer a:active {
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Optional: subtle focus outline for accessibility */
+.site-footer a:focus-visible {
+  outline: 2px solid var(--muted-2);
+  outline-offset: 2px;
+}
+
+/* RTL support when Arabic is active */
+.info-container.rtl .info-body,
+.info-container.rtl .info-contacts {
+  direction: rtl;
+  text-align: right;
+}
+
+/* Make the logo definitely clickable */
+.logo-btn{
+  margin-top: 20px;
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  display: inline-block;
+  position: relative;
+  z-index: 10;           /* sit above any overlays */
+}
+
+.info-logo{
+  width: 120px;          /* adjust size as you like */
+  height: auto;
+  display: block;
+  pointer-events: auto;  /* ensure not disabled by any global rules */
+}
+
+/* If you previously had pointer-events: none on images, remove it
+   or specifically override for the logo: */
+.info-logo { pointer-events: auto; }
+
+/* ——— Info i18n / logo ——— */
+.info-page { padding-top: 48px; }
+.info-container { position: relative; }
+
+.logo-btn{
+  margin-top: 22px;           /* space under Instagram line */
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  display: inline-block;
+  position: relative;
+  z-index: 10;                /* make sure nothing overlays it */
+}
+
+.info-logo{
+  width: 120px;               /* tweak as desired */
+  height: auto;
+  display: block;
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-drag: none;
+  filter: drop-shadow(0 0 0 transparent);
+}
+
+.logo-btn:hover .info-logo{
+  transform: translateY(-1px);
+  transition: transform .12s ease;
+}
+
+/* small pill that shows the current language name */
+.lang-badge{
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: .02em;
+}
+
+/* Info logo: look like plain image, still keyboard accessible */
+.info-logo-ghost{
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin-top: 14px;        /* space below Instagram line */
+  cursor: pointer;
+  display: inline-block;
+}
+
+.info-logo-ghost:focus-visible{
+  outline: 2px dashed var(--muted);
+  outline-offset: 4px;     /* subtle accessibility ring on keyboard focus */
+}
+
+.info-logo{
+  width: 92px;             /* tweak size as you like */
+  height: auto;
+  display: block;
+}
+
+/* If you previously had a text label under the logo, hide it if still present */
+.info-lang-label{ display:none !important; }
+
+/* Kill tick-bar animation */
+.site-header .ticks,
+.site-header .ticks::before,
+.site-header .ticks::after { animation: none !important; }
+
+/* ===== Intro overlay ===== */
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--bg, #fff);
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.intro-inner {
+  width: min(1200px, 92vw);
+  transform: translateY(0);
+}
+
+/* Tick bar: drawn with a repeating gradient, revealed by scaleX */
+.intro-ticks {
+  height: 18px;
+  margin: 0 0 18px 0;
+  color: var(--fg, #111);
+  background-image: repeating-linear-gradient(
+    to right,
+    currentColor 0 2px,
+    transparent 2px 8px
+  );
+  transform-origin: left center;
+  transform: scaleX(0);
+  animation: intro-draw 1100ms cubic-bezier(.2,.9,.2,1) forwards;
+}
+
+@keyframes intro-draw { to { transform: scaleX(1); } }
+
+/* Row with the two labels – match your nav sizing */
+.intro-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: var(--nav-font-size, 18px); /* <- set once to match your nav */
+  line-height: 1;
+  letter-spacing: 0; /* match your nav */
+  color: var(--fg, #111);
+  opacity: 1;
+}
+
+/* Slide whole overlay up and fade during exit */
+.intro--slide .intro-inner {
+  animation: intro-slide-up 320ms cubic-bezier(.4,.7,.2,1) forwards;
+}
+
+@keyframes intro-slide-up {
+  to {
+    transform: translateY(-72px);
+    opacity: 0;
+  }
+}
+
+/* ===== App reveal tied to the 'intro' state (see step 3) ===== */
+.app.is-intro .site-header { opacity: 0; transform: translateY(8px); }
+.app.is-intro .app-main,
+.app.is-intro .site-footer { opacity: 0; transform: translateY(28px); }
+
+.app.is-ready .site-header,
+.app.is-ready .app-main,
+.app.is-ready .site-footer {
+  transition: opacity 420ms ease, transform 420ms ease;
+  opacity: 1; transform: none;
+}
