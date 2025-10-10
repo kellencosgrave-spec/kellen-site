@@ -599,4 +599,17 @@ img,video{display:block;max-width:100%;height:auto}
   .caption{ padding: 0 8px; }
 }
 
+/* put in src/index.css */
+.slide-viewport, .archive-viewport { touch-action: pan-y; }
+
+/* allow vertical page scroll while listening for horizontal swipe */
+.slide, .click-zones { touch-action: pan-y; }
+
+/* avoid iOS image drag/selection during swipe */
+.slide img, .slide-viewport img {
+  -webkit-user-drag: none;
+  user-select: none;
+}
+
+
 

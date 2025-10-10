@@ -333,23 +333,6 @@ function Header({
 }) {
   const [workOpen, setWorkOpen] = useState(false);
   const [hoverSlug, setHoverSlug] = useState(WORKS[0]?.slug || null);
-
-// NEW: mobile menu state
-  const [mMenuOpen, setMMenuOpen] = useState(false);
-  const [mWorkOpen, setMWorkOpen] = useState(false);
-  const isTouch = typeof window !== "undefined" &&
-                  window.matchMedia?.("(hover: none)").matches;
-  const isMobile = typeof window !== "undefined" &&
-                  window.matchMedia?.("(max-width: 700px)").matches;
-
-// Close Sounds when navigating to another page
-  const safeNavigate = (to) => {
-    setSoundOpen(false);
-    setMMenuOpen(false);
-    setMWorkOpen(false);
-    navigate(to);
-  };
-
   const hoveredWork = WORKS.find(w => w.slug === hoverSlug) || WORKS[0];
 
   // ESC closes Sounds overlay (audio keeps playing)
@@ -359,77 +342,71 @@ function Header({
     return () => document.removeEventListener("keydown", onKey);
   }, [setSoundOpen]);
 
+  // --- Mobile menu state ---
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileWorkOpen, setMobileWorkOpen] = useState(false);
+  const isTouch = typeof window !== "undefined" && matchMedia?.("(hover: none)").matches;
+
+  // Close mobile menus on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+    setMobileWorkOpen(false);
+  }, [current]);
+
+  // Helper: unified go() that also closes panels & sounds
+  const go = (hash) => {
+    setSoundOpen(false);
+    setMobileWorkOpen(false);
+    setMobileMenuOpen(false);
+    navigate(hash);
+  };
+
   return (
     <header className="site-header" onMouseLeave={() => setWorkOpen(false)}>
-      {/* MOBILE: drop-down panel lives at the very top; desktop keeps it hidden */}
-      <div className={`mobile-menu-panel ${mMenuOpen ? "open" : ""}`}>
-        <div className="container">
-          <nav className="mobile-menu-list" aria-label="Mobile menu">
-            <button className="menu-item" onClick={() => setMWorkOpen(v => !v)}>
-              Work
-            </button>
-            {mWorkOpen && (
-              <div className="mobile-projects">
-                {WORKS.filter(w => w.slug !== "videos").map((w) => (
-                  <button
-                    key={w.slug}
-                    className="project-link"
-                    onClick={() => safeNavigate(`work/${w.slug}`)}
-                  >
-                    {w.title}
-                  </button>
-                ))}
-                <button className="project-link" onClick={() => safeNavigate("work/videos")}>
-                  Videos
-                </button>
-              </div>
-            )}
+      {/* Mobile slide-down panel lives ABOVE the tick bar; controlled by .open class in CSS */}
+      <div className={`mnav-panel ${mobileMenuOpen ? "open" : ""}`}>
+        <div className="container mnav-inner">
+          <button className="mnav-item" onClick={() => setMobileWorkOpen(v => !v)}>
+            Work {mobileWorkOpen ? "–" : "+"}
+          </button>
 
-            <button className="menu-item" onClick={() => safeNavigate("archive")}>Archive</button>
-            <button className="menu-item" onClick={() => safeNavigate("info")}>Info</button>
-          </nav>
+          {mobileWorkOpen && (
+            <div className="mnav-sublist">
+              {WORKS.filter(w => w.slug !== "videos").map((w) => (
+                <button key={w.slug} className="mnav-subitem" onClick={() => go(`work/${w.slug}`)}>
+                  {w.title}
+                </button>
+              ))}
+              <button className="mnav-subitem" onClick={() => go("work/videos")}>Videos</button>
+            </div>
+          )}
+
+          <button className="mnav-item" onClick={() => go("archive")}>Archive</button>
+          <button className="mnav-item" onClick={() => go("info")}>Info</button>
         </div>
       </div>
 
-      {/* Tick bar */}
+      {/* Tick bar (unchanged) */}
       <div className="ticks" />
 
       <div className="container row">
         <nav className="nav">
-          {/* LEFT: name (always) */}
-          <a onClick={() => safeNavigate("home")}>Kellen Cosgrave</a>
+          {/* Left: site name */}
+          <a onClick={() => go("home")}>Kellen Cosgrave</a>
 
-          {/* CENTER (mobile): Menu/Close */}
+          {/* Center: Menu / Close (mobile shows via CSS) */}
           <button
-            className="nav-center mobile-only"
-            onClick={() => setMMenuOpen(o => !o)}
-            aria-expanded={mMenuOpen}
-            aria-controls="mobile-menu-panel"
-          >
-            {mMenuOpen ? "Close" : "Menu"}
-          </button>
-
-          {/* Desktop “Work” behaves like before (hover); on touch it toggles the overlay */}
-          <button
-            className={`desktop-only ${current === "work" ? "active" : ""}`}
-            onMouseEnter={() => !isTouch && setWorkOpen(true)}
+            className="nav-menu-btn"
+            aria-expanded={mobileMenuOpen}
             onClick={() => {
-              if (isTouch || isMobile) setWorkOpen(v => !v);
-              else safeNavigate("work/night-vision");
+              setMobileMenuOpen(v => !v);
+              if (!mobileMenuOpen) setMobileWorkOpen(false);
             }}
           >
-            Work
+            {mobileMenuOpen ? "Close" : "Menu"}
           </button>
 
-          <a className={`desktop-only ${current === "archive" ? "active" : ""}`} onClick={() => safeNavigate("archive")}>
-            Archive
-          </a>
-
-          <a className={`desktop-only ${current === "info" ? "active" : ""}`} onClick={() => safeNavigate("info")}>
-            Info
-          </a>
-
-          {/* RIGHT: Sounds + play/pause (always) */}
+          {/* Right: Sounds + Play/Pause */}
           <div className="sounds-cell">
             <button
               className={(current === "sounds" || soundOpen) ? "active" : ""}
@@ -439,14 +416,18 @@ function Header({
             >
               Sounds
             </button>
-            <button className="sound-pp" aria-label={isPlaying ? "Pause" : "Play"} onClick={togglePlay}>
+            <button
+              className="sound-pp"
+              aria-label={isPlaying ? "Pause" : "Play"}
+              onClick={togglePlay}
+            >
               {isPlaying ? "❚❚" : "►"}
             </button>
           </div>
         </nav>
       </div>
 
-      {/* Work overlay (hover) */}
+      {/* Work overlay (desktop hover) — unchanged */}
       <div className={`work-overlay ${workOpen ? "open" : ""}`} onMouseEnter={() => setWorkOpen(true)}>
         <div className="sheet">
           <div className="container inner">
@@ -476,7 +457,7 @@ function Header({
         </div>
       </div>
 
-      {/* Sounds overlay (click outside closes) */}
+      {/* Sounds overlay (unchanged) */}
       <div
         id="sound-overlay"
         className={`sound-overlay ${soundOpen ? "open" : ""}`}
@@ -513,6 +494,38 @@ function Header({
   );
 }
 
+// ------------------------------------------------------------
+// Swipe helper used by Project & ArchiveView (mobile-friendly)
+// ------------------------------------------------------------
+function useSwipe({ onLeft, onRight, threshold = 40 }) {
+  const startX = React.useRef(null);
+  const startY = React.useRef(null);
+  const dragging = React.useRef(false);
+
+  const onTouchStart = (e) => {
+    const t = e.changedTouches[0];
+    startX.current = t.clientX;
+    startY.current = t.clientY;
+    dragging.current = true;
+  };
+
+  const onTouchEnd = (e) => {
+    if (!dragging.current) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - startX.current;
+    const dy = t.clientY - startY.current;
+    dragging.current = false;
+
+    // Mostly-horizontal swipe over the threshold?
+    if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > threshold) {
+      if (dx < 0) onLeft && onLeft();
+      else onRight && onRight();
+    }
+  };
+
+  return { onTouchStart, onTouchEnd };
+}
+
 /* =========================================================
    5) Pages
    ========================================================= */
@@ -520,6 +533,7 @@ function Home({ theme, setTheme }) {
   const lightRef = React.useRef(null);
   const darkRef  = React.useRef(null);
 
+  // Warm both videos once (so theme toggle doesn’t refetch)
   React.useEffect(() => {
     [lightRef.current, darkRef.current].forEach(v => {
       if (!v) return;
@@ -534,14 +548,13 @@ function Home({ theme, setTheme }) {
 
   return (
     <div className="container" style={{ paddingTop: 36 }}>
-      {/* fixed-height box prevents any vertical jump */}
       <div className="hero-wrap">
         <video
           ref={lightRef}
           className="hero-video"
           src="/webland-light.mp4"
           poster="/hero_light.jpg"
-          playsInline muted autoPlay loop
+          playsInline muted autoPlay loop controls={false}
           style={{ opacity: showLight ? 1 : 0 }}
         />
         <video
@@ -549,17 +562,16 @@ function Home({ theme, setTheme }) {
           className="hero-video"
           src="/webland3.mp4"
           poster="/hero_poster.jpg"
-          playsInline muted autoPlay loop
+          playsInline muted autoPlay loop controls={false}
           style={{ opacity: showLight ? 0 : 1 }}
         />
       </div>
 
-      {/* stays below; no more “jump to center” */}
+      {/* Centered theme toggle below hero */}
       <ThemeToggle theme={theme} setTheme={setTheme} />
     </div>
   );
 }
-
 
 
 function VideosGrid({ navigate }) {
@@ -686,6 +698,8 @@ function Project({ slug }) {
   const prev = () => setIdx((i) => (i - 1 + total) % total);
   const next = () => setIdx((i) => (i + 1) % total);
 
+const swipe = useSwipe({ onLeft: next, onRight: prev });
+
   useEffect(() => {
     const onKey = (e) => { if (e.key === "ArrowLeft") prev(); if (e.key === "ArrowRight") next(); };
     document.addEventListener("keydown", onKey);
@@ -695,7 +709,7 @@ function Project({ slug }) {
   return (
     <div className="container">
       <div className="slide-wrap">
-        <figure className="slide click-zones">
+        <figure className="slide click-zones" {...swipe}>
           {total > 0 ? (
             <>
               <div className="slide-viewport">
@@ -753,6 +767,8 @@ function ArchiveView({ aSlug, navigate }) {
   const prev = () => setIdx((i) => { const ni = (i - 1 + ARCHIVE.length) % ARCHIVE.length; navigate(`archive/${ARCHIVE[ni].slug}`); return ni; });
   const next = () => setIdx((i) => { const ni = (i + 1) % ARCHIVE.length; navigate(`archive/${ARCHIVE[ni].slug}`); return ni; });
 
+const swipe = useSwipe({ onLeft: next, onRight: prev });
+
   useEffect(() => {
     const onKey = (e) => { if (e.key === "ArrowLeft") prev(); if (e.key === "ArrowRight") next(); if (e.key === "Escape") navigate("archive"); };
     document.addEventListener("keydown", onKey);
@@ -764,7 +780,7 @@ function ArchiveView({ aSlug, navigate }) {
   return (
     <div className="container">
       <div className="slide-wrap">
-        <figure className="slide click-zones">
+        <figure className="slide click-zones" {...swipe}>
           <div className="slide-viewport"><img key={a.slug} src={a.src} alt={a.caption || a.title} /></div>
           <button aria-label="Previous" onClick={prev} style={{ left: 0 }} />
           <button aria-label="Next" onClick={next} style={{ right: 0 }} />
@@ -876,30 +892,44 @@ export default function App(){
     localStorage.setItem("theme", theme);
   }, [theme]);
 
-  // SOUNDS (global audio)
-  const audioRef = useRef(null);
-  const [soundOpen, setSoundOpen] = useState(false);
-  const [trackIdx, setTrackIdx] = useState(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+// SOUNDS (global audio)
+const audioRef = useRef(null);
+const [soundOpen, setSoundOpen] = useState(false);
+const [trackIdx, setTrackIdx] = useState(null);
+const [isPlaying, setIsPlaying] = useState(false);
 
-  useEffect(() => {
-    const a = audioRef.current;
-    if (!a) return;
+// Keep isPlaying in sync with the <audio> element
+useEffect(() => {
+  const a = audioRef.current;
+  if (!a) return;
 
-    const onPlay  = () => setIsPlaying(true);
-    const onPause = () => setIsPlaying(false);
-    const onEnded = () => setIsPlaying(false);
+  const onPlay  = () => setIsPlaying(true);
+  const onPause = () => setIsPlaying(false);
+  const onEnded = () => setIsPlaying(false);
 
-    a.addEventListener("play", onPlay);
-    a.addEventListener("pause", onPause);
-    a.addEventListener("ended", onEnded);
+  a.addEventListener("play", onPlay);
+  a.addEventListener("pause", onPause);
+  a.addEventListener("ended", onEnded);
 
-    return () => {
-      a.removeEventListener("play", onPlay);
-      a.removeEventListener("pause", onPause);
-      a.removeEventListener("ended", onEnded);
-    };
-  }, []);
+  return () => {
+    a.removeEventListener("play", onPlay);
+    a.removeEventListener("pause", onPause);
+    a.removeEventListener("ended", onEnded);
+  };
+}, []);
+
+// #3a — Close the Sounds overlay whenever the route/page changes
+useEffect(() => {
+  setSoundOpen(false);
+}, [page]);
+
+// #3b — Optional: toggle a body class when on Home (handy for mobile CSS targeting)
+useEffect(() => {
+  const hasHero = page === "home";
+  document.body.classList.toggle("has-hero", hasHero);
+  return () => document.body.classList.remove("has-hero");
+}, [page]);
+
 
   const playTrack = async (i) => {
     const a = audioRef.current;
@@ -1010,24 +1040,28 @@ export default function App(){
       <main className="app-main">{Page}</main>
 
 <footer className="site-footer">
-  <div className="container row">
+  <div className="container row footer-grid">
     <span className="foot-left">{SITE.name}</span>
 
-    <span className="now-playing">
-      Now Playing:&nbsp;
-      <strong>{trackIdx != null ? SOUNDS[trackIdx].title : "—"}</strong>
-      {!isPlaying && trackIdx != null ? " (paused)" : ""}
-    </span>
+    {/* Now Playing (marquee on mobile via CSS) */}
+    <div className="now-playing-wrap">
+      <span className="np-label">Now Playing&nbsp;</span>
+      <div className="np-track-mask" aria-live="polite">
+        <div className={`np-track ${isPlaying ? "scroll" : ""}`}>
+          <strong>{trackIdx != null ? SOUNDS[trackIdx].title : "—"}</strong>
+          {!isPlaying && trackIdx != null ? " (paused)" : ""}
+        </div>
+      </div>
+    </div>
 
-    <span
-      className="foot-right"
-      style={{ display: "flex", gap: "14px", justifySelf: "end" }}
-    >
+    <span className="foot-right" style={{ display: "flex", gap: "14px", justifySelf: "end" }}>
       <a href={`mailto:${SITE.email}`}>Email</a>
-      <a href={SITE.ig} target="_blank" rel="noreferrer">Instagram</a>
+      <a href={SITE.ig} target="_blank" rel="noopener noreferrer">Instagram</a>
     </span>
   </div>
 </footer>
+
+
     </div>
   );
 }
