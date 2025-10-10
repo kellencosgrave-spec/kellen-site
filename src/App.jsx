@@ -456,25 +456,50 @@ function Header({
    5) Pages
    ========================================================= */
 function Home({ theme, setTheme }) {
-  const hero = HERO[theme] || HERO.light;
+  const lightRef = React.useRef(null);
+  const darkRef  = React.useRef(null);
+
+  React.useEffect(() => {
+    [lightRef.current, darkRef.current].forEach(v => {
+      if (!v) return;
+      v.preload = "auto";
+      const tryPlay = () => v.play().catch(()=>{});
+      v.addEventListener("canplay", tryPlay, { once:true });
+      tryPlay();
+    });
+  }, []);
+
+  const showLight = theme !== "dark";
+
   return (
     <div className="container" style={{ paddingTop: 36 }}>
-      <video
-        src={hero.src}
-        poster={hero.poster}
-        playsInline
-        autoPlay
-        muted
-        loop
-        controls={false}
-        style={{ width: "100%", height: "auto" }}
-      />
+      {/* fixed-height box prevents any vertical jump */}
+      <div className="hero-wrap">
+        <video
+          ref={lightRef}
+          className="hero-video"
+          src="/webland-light.mp4"
+          poster="/hero_light.jpg"
+          playsInline muted autoPlay loop
+          style={{ opacity: showLight ? 1 : 0 }}
+        />
+        <video
+          ref={darkRef}
+          className="hero-video"
+          src="/webland3.mp4"
+          poster="/hero_poster.jpg"
+          playsInline muted autoPlay loop
+          style={{ opacity: showLight ? 0 : 1 }}
+        />
+      </div>
 
-      {/* Centered theme toggle icons */}
+      {/* stays below; no more “jump to center” */}
       <ThemeToggle theme={theme} setTheme={setTheme} />
     </div>
   );
 }
+
+
 
 function VideosGrid({ navigate }) {
   const supportsHover =
