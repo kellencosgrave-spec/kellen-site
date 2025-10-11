@@ -192,7 +192,7 @@ const ARCHIVE_SUBTITLES = {
   "archive-022": "Toilet archway — shot on Portra 400 film",
   "archive-023": "Metal window — shot on Portra 400 film",
   "archive-024": "Metallic sculpture — shot on Portra 400 film",
-  "archive-025": "TV's — shot on Portra 400 film",
+  "archive-025": "Unplugged — shot on Portra 400 film",
   "archive-026": "Prickly pear cactus — shot on Portra 400 film",
   "archive-027": "Pastel bus — shot on Portra 400 film",
   "archive-028": "Virgin plateau — shot on Portra 400 film",
